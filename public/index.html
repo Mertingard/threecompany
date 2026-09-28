@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orta Çağ İmparatorlukları</title>
+  <meta name="description" content="Three.js ile 3D dünya küresi üzerinde gerçek zamanlı orta çağ büyük strateji oyunu" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%231d4a78'/%3E%3Cpath d='M14 30c6-8 14-10 20-6s10 2 16-4c-2 12-10 18-18 16s-12 4-18-6z' fill='%238fae55'/%3E%3Cpath d='M20 44l6-6 6 6 6-10 6 10' stroke='%23e6c34a' stroke-width='3' fill='none'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/vendor/three/build/three.module.js",
+        "three/addons/": "/vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="globe"></div>
+  <div id="overlay"></div>
+  <div id="ui"></div>
+  <div id="tooltip" class="tooltip hidden"></div>
+  <div id="loading">
+    <div class="load-box">
+      <h1>Orta Çağ İmparatorlukları</h1>
+      <p id="load-text">Dünya haritası yükleniyor…</p>
+      <div class="load-bar"><div id="load-fill"></div></div>
+    </div>
+  </div>
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

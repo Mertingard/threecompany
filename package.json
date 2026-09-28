@@ -1,0 +1,24 @@
+{
+  "name": "orta-cag-imparatorluklar",
+  "version": "1.0.0",
+  "description": "Three.js ile 3D dünya küresi üzerinde gerçek zamanlı orta çağ büyük strateji oyunu (tek ve çok oyunculu)",
+  "type": "module",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "build:world": "node scripts/build-world.js",
+    "test": "node scripts/sim-test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.186.1",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
+  }
+}
