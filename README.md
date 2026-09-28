@@ -70,7 +70,7 @@ Tarayıcıda **http://localhost:3000** adresini aç. Tek oyunculu mod tamamen ta
 | --- | --- |
 | Küreyi döndür / yakınlaş | Sol tık sürükle / fare tekerleği |
 | Bölge veya ordu seç | Sol tık (aynı bölgeye ikinci tık: ordu yerine bölge) |
-| Orduyu hareket ettir, saldır, kuşat | Sağ tık |
+| Orduyu hareket ettir, saldır, kuşat | Sağ tık (veya ordu panelinde **➜ Hareket**, sonra hedefe tık — dokunmatik ekranlar için) |
 | Seçime ordu ekle | Shift + tık |
 | Duraklat / hız | Boşluk / 1–5 |
 | Seçimi kaldır / menü | Esc |

@@ -311,6 +311,13 @@ wss.on('connection', (ws) => {
   });
 });
 
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') console.error(`Port ${PORT} kullanımda. Başka bir port deneyin: PORT=3001 npm start`);
+  else console.error(e);
+  process.exit(1);
+});
+wss.on('error', () => {});
+
 server.listen(PORT, () => {
   console.log(`Orta Çağ İmparatorlukları sunucusu çalışıyor: http://localhost:${PORT}`);
 });
