@@ -277,25 +277,32 @@ export class GameUI {
   refreshMap(force = false) {
     const s = this.G.state;
     const v = this.vers;
+    const now = performance.now();
     const own = s.ownVer !== v.own, ctrl = s.ctrlVer !== v.ctrl, dev = s.devVer !== v.dev, dip = s.pactVer !== v.pact || s.warVer !== v.war;
-    if (force || own || ctrl || (dev && this.globe.mode === 'gelisim') || (dip && this.globe.mode === 'diplomasi') || this.globe.mode === 'diplomasi' && s.day - (v.dipDay || 0) > 30) {
-      this.globe.recolor(this.G, this.me);
-      v.dipDay = s.day;
-    }
-    if (force || own) {
-      this.borders.rebuild(this.G);
-      const now = performance.now();
-      if (force || now - (v.labelT || 0) > 2500) { this.labels.rebuild(this.G); v.labelT = now; v.labelDirty = false; }
-      else v.labelDirty = true;
-    }
+    const mode = this.globe.mode;
+    if (own || ctrl || (dev && mode === 'gelisim') || (dip && mode === 'diplomasi') || (mode === 'diplomasi' && s.day - (v.dipDay || 0) > 30)) v.colorDirty = true;
+    if (own) v.borderDirty = true;
     v.own = s.ownVer; v.ctrl = s.ctrlVer; v.dev = s.devVer; v.pact = s.pactVer; v.war = s.warVer;
+    // yüksek hızda her karede yeniden çizmemek için sınırla
+    if (force || (v.colorDirty && now - (v.colorT || 0) > 250)) {
+      this.globe.recolor(this.G, this.me);
+      v.colorDirty = false; v.colorT = now; v.dipDay = s.day;
+    }
+    if (force || (v.borderDirty && now - (v.borderT || 0) > 400)) {
+      this.borders.rebuild(this.G);
+      v.borderDirty = false; v.borderT = now;
+      v.labelDirty = true;
+    }
+    if (force || (v.labelDirty && now - (v.labelT || 0) > 2500)) {
+      this.labels.rebuild(this.G);
+      v.labelDirty = false; v.labelT = now;
+    }
   }
 
   onTick() {
     if (!this.G) return;
     const now = performance.now();
     this.refreshMap();
-    if (this.vers.labelDirty && now - (this.vers.labelT || 0) > 2500) { this.labels.rebuild(this.G); this.vers.labelT = now; this.vers.labelDirty = false; }
     if (now - this.lastTop > 150) { this.updateTopbar(); this.lastTop = now; }
     if (now - this.lastSide > 300) { this.renderSide(); this.lastSide = now; }
     this.checkProposals();
@@ -306,6 +313,8 @@ export class GameUI {
 
   frame(dt, dist) {
     if (!this.G) return;
+    const v = this.vers;
+    if (v.colorDirty || v.borderDirty || v.labelDirty) this.refreshMap();
     this.armyLayer.selected = this.sel.armies;
     this.armyLayer.update(this.G, this.me, dist);
     if (this.labelsOn) this.labels.update(dist);
@@ -550,7 +559,7 @@ export class GameUI {
           '⚑ Yerleşim kur', info.cost ? ` (${info.cost} altın, ${info.days} gün)` : ''));
         if (!info.ok) kids.push(h('div', { class: 'muted', style: { fontSize: '13px', marginTop: '4px' } }, info.msg));
       }
-      kids.push(h('p', { class: 'muted', style: { fontSize: '13px' } }, 'Ya da en az 3.000 askerlik bir orduyu buraya gönderip bekletirsen yerli kabileleri zorla boyun eğdirirsin (ordu kayıp verir).'));
+      kids.push(h('p', { class: 'muted', style: { fontSize: '13px' } }, 'Ya da en az 3.000 askerlik bir orduyu buraya gönderip bekletirsen yerli kabileleri zorla boyun eğdirirsin (ordu kayıp verir). Her yeni toprak edinmeden sonra, ülken büyüdükçe uzayan bir bekleme süresi vardır.'));
     } else if (o && o !== me) {
       kids.push(h('div', { style: { marginTop: '10px' } }, h('button', { class: 'btn', onclick: () => this.selectNation(o) }, flag(n, 18, 12), ' Ülke ve diplomasi')));
     }

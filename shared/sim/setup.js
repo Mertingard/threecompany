@@ -4,7 +4,8 @@ import { START_YEAR, REG_SIZE, TRUCE_DAYS, RELIGIONS, GOVS } from '../data/rules
 import { TERRAIN, T } from '../data/terrain.js';
 import { latLonToVec } from '../geodesic.js';
 import { makeG, addPact, maxMorale, cellsOf, touchOwners, addOpinion, setTruce, log, fx } from './core.js';
-import { economy } from './economy.js';
+import { economy, canResearch } from './economy.js';
+import { TECHS } from '../data/techs.js';
 import { createArmy } from './military.js';
 import { baselineOpinion } from './diplomacy.js';
 import { Heap } from './util.js';
@@ -205,7 +206,7 @@ export function foundNation(G, opt) {
     if (o) victims.add(o);
     s.owner[c] = id;
     s.ctrl[c] = id;
-    s.dev[c] = Math.max(s.dev[c], 2);
+    s.dev[c] = Math.max(s.dev[c], c === cell ? 6 : 3);
     delete s.builds[c];
     delete s.recruits[c];
     delete s.colonies[c];
@@ -228,7 +229,7 @@ export function foundNation(G, opt) {
   n.gold = 150;
   n.manpower = Math.round(e.mpMax * 0.7);
   n.techs.push(...(opt.techs || []));
-  createArmy(G, id, cell, [{ t: 'piyade', n: REG_SIZE }, { t: 'piyade', n: REG_SIZE }, { t: 'piyade', n: REG_SIZE }, { t: 'okcu', n: REG_SIZE }, { t: 'suvari', n: REG_SIZE }]);
+  createArmy(G, id, cell, [{ t: 'piyade', n: REG_SIZE }, { t: 'piyade', n: REG_SIZE }, { t: 'okcu', n: REG_SIZE }, { t: gov === 'hanlik' || gov === 'kabile' ? 'suvari' : 'piyade', n: REG_SIZE }]);
   log(G, `${name} kuruldu! Başkent: ${W.names[cell]}.`, [id, ...victims], { cell, kind: 'bilgi', global: true });
   return { ok: true, id };
 }
@@ -239,5 +240,11 @@ export function setHuman(G, id, playerName) {
   n.human = true;
   n.player = playerName || 'Oyuncu';
   n.aiControl = false;
+  // başlangıç için en ucuz teknolojiyi hedef olarak öner
+  if (!n.researching) {
+    let best = null, bc = Infinity;
+    for (const t of TECHS) if (canResearch(G, id, t.id) && t.cost < bc) { bc = t.cost; best = t.id; }
+    n.researching = best;
+  }
   return true;
 }

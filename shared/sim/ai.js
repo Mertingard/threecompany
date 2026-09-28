@@ -210,6 +210,7 @@ function aiDiplomacy(G, id, e) {
       if (threats.includes(c) && rand(s) < 0.5) continue;
       if (opinion(G, id, c) < -5) continue;
       const ev = evaluate(G, id, c, 'ittifak');
+      if (isHuman(G, c) && rand(s) < 0.6) continue;
       const sc = ev.score + (isHuman(G, c) ? -15 : 0);
       if (sc > bs) { bs = sc; best = c; }
     }
@@ -236,10 +237,10 @@ function aiDiplomacy(G, id, e) {
   // savaş ilanı
   if (war || ov) return;
   const sincePeace = s.day - Math.max(n.ai.lastPeace || -9999, n.ai.lastWar || -9999);
-  if (sincePeace < 365 * (2.5 - aggr * 2) && sincePeace < 9000) return;
+  if (sincePeace < 365 * (2 - aggr * 1.6) && sincePeace < 9000) return;
   if (s.day < 365) return;
   if (rand(s) > 0.12 + aggr * 0.25) return;
-  if (n.gold < 0 || n.manpower < (e.mpMax || 1) * 0.3) return;
+  if (n.gold < 0 || n.manpower < (e.mpMax || 1) * 0.08) return;
   if (n.infamy > 45 && rand(s) < 0.8) return;
   const diff = s.settings.difficulty;
   let best = null, bscore = 0;
@@ -248,13 +249,17 @@ function aiDiplomacy(G, id, e) {
     if (hasPact(G, 'saldirmazlik', id, t) && (aggr < 0.85 || rand(s) < 0.9)) continue;
     const tn = s.nations[t];
     let theirs = sideStrength(G, t);
-    for (const a of alliesOf(G, t)) if (!hasPact(G, 'ittifak', a, id)) theirs += sideStrength(G, a) * 0.7;
+    for (const a of alliesOf(G, t)) {
+      if (hasPact(G, 'ittifak', a, id)) continue;
+      const near = neighborNations(G, a).includes(id) || neighborNations(G, a).includes(t);
+      theirs += sideStrength(G, a) * (near ? 0.6 : 0.25);
+    }
     const tov = overlordOf(G, t);
     if (tov) theirs += sideStrength(G, tov);
     let mine = myStr;
     for (const a of allies) if (!hasPact(G, 'ittifak', a, t)) mine += sideStrength(G, a) * 0.35;
     const ratio = mine / Math.max(1, theirs);
-    const req = 1.65 - aggr * 0.65;
+    const req = 1.45 - aggr * 0.6;
     if (ratio < req) continue;
     let sc = ratio - req + 0.2;
     if (tn.religion !== n.religion) sc += 0.25;
@@ -432,7 +437,7 @@ export function aiArmies(G, id) {
     if (sg && sg.by === id) continue;
     const men = armyMen(a);
     const P = cellsOf(G, id).length;
-    if (!conquering && n.ai.aggr > 0.2 && men >= 4000 && rand(s) < 0.12 * (30 / (30 + P))) {
+    if (!conquering && (n.nextClaim || 0) <= s.day && n.ai.aggr > 0.2 && men >= 4000 && rand(s) < 0.25) {
       conquering++;
       const t = bfsFind(G, id, a.cell, (c) => {
         if (s.owner[c] || !W.isOwnable(c) || s.colonies[c] || s.sieges[c]) return false;

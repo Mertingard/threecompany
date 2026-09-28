@@ -149,6 +149,7 @@ export function respond(G, nid, pid, accept, option = 0, auto = false) {
         return { ok: true, msg: 'Barış imzalandı.' };
       }
       log(G, `${to.name}, ${from.name} ülkesinin barış teklifini reddetti.`, [p.from, p.to], { kind: 'diplomasi' });
+      if (from) from.ai['p' + p.data.war] = s.day + 150;
       return { ok: true };
     }
     case 'savasa_cagri':
@@ -159,8 +160,11 @@ export function respond(G, nid, pid, accept, option = 0, auto = false) {
         applyProposal(G, p.from, p.to, p.type);
         return { ok: true, msg: 'Teklif kabul edildi.' };
       }
-      if (from) addOpinion(G, p.from, p.to, -5);
-      log(G, `${to.name}, ${from?.name} ülkesinin teklifini reddetti.`, [p.from, p.to], { kind: 'diplomasi' });
+      if (from) {
+        addOpinion(G, p.from, p.to, -5);
+        from.cd[p.type + '_' + p.to] = s.day + 365 * 2;
+      }
+      log(G, `${to.name}, ${from?.name} ülkesinin teklifini ${auto ? 'yanıtsız bıraktı' : 'reddetti'}.`, [p.from, p.to], { kind: 'diplomasi' });
       return { ok: true };
   }
 }

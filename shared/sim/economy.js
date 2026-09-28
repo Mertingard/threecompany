@@ -203,6 +203,9 @@ export function colonyInfo(G, id, c) {
     if (f.ocean && W.coastal[c] && cellsOf(G, id).some((x) => W.coastal[x])) overseas = true;
     else return { ok: false, msg: 'Topraklarınıza komşu olmalı (okyanus ötesi için Karavel gerekir).' };
   }
+  const n = s.nations[id];
+  const wait = (n.nextClaim || 0) - s.day;
+  if (wait > 0) return { ok: false, msg: `Yeni toprakları örgütlemek için ${wait} gün beklemelisiniz (ülke büyüdükçe süre uzar).` };
   const active = Object.values(s.colonies).filter((x) => x.n === id).length;
   const limit = 1 + f.colonies;
   const t = TERRAIN[W.terrain[c]];
@@ -222,6 +225,12 @@ export function startColony(G, id, c) {
   return { ok: true, msg: 'Yerleşimciler yola çıktı.' };
 }
 
+// Sahipsiz topraklardan yeni bölge edinme bekleme süresi (ülke büyüdükçe karesel artar)
+export function claimCooldown(G, id) {
+  const P = cellsOf(G, id).length;
+  return Math.round(20 * (1 + P / 10) ** 2);
+}
+
 export function claimCell(G, id, c, devOverride = null) {
   const s = G.state;
   s.owner[c] = id;
@@ -229,6 +238,8 @@ export function claimCell(G, id, c, devOverride = null) {
   if (devOverride !== null) s.dev[c] = devOverride;
   delete s.colonies[c];
   touchOwners(G);
+  const n = s.nations[id];
+  if (n) n.nextClaim = s.day + claimCooldown(G, id);
 }
 
 // ---------- günlük kuyruklar ----------

@@ -204,7 +204,7 @@ table.t td { padding: 4px 6px; border-bottom: 1px solid rgba(122, 95, 46, 0.25);
 table.t tr.click { cursor: pointer; }
 table.t tr.click:hover td { background: rgba(255, 220, 150, 0.06); }
 table.t tr.me td { background: rgba(216, 178, 90, 0.12); }
-.num { text-align: right; font-variant-numeric: tabular-nums; }
+.num, table.t th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ---------- barış ---------- */
 .peace-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
