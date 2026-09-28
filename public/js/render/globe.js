@@ -169,7 +169,7 @@ export class Globe {
         wc[v * 3] = tmpC.r * m; wc[v * 3 + 1] = tmpC.g * m; wc[v * 3 + 2] = tmpC.b * m;
       }
     }
-    const waterMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.38, metalness: 0.08 });
+    const waterMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.0 });
     this.waterUniforms = { uTime: { value: 0 } };
     waterMat.onBeforeCompile = (sh) => {
       sh.uniforms.uTime = this.waterUniforms.uTime;
@@ -240,7 +240,7 @@ export class Globe {
 
   buildRivers() {
     const W = this.W;
-    const mat = new THREE.MeshStandardMaterial({ color: '#3d7fc4', roughness: 0.4, metalness: 0.1 });
+    const mat = new THREE.MeshStandardMaterial({ color: '#336fae', roughness: 0.45, metalness: 0.05 });
     const group = new THREE.Group();
     let cell = 0;
     for (const r of W.rivers) {
@@ -259,7 +259,7 @@ export class Globe {
       cell = this.nearestFrom(cell, vs[vs.length - 1]);
       pts.push(last.multiplyScalar(W.isWater(cell) ? 1.001 : this.height(cell) + 0.0007));
       const curve = new THREE.CatmullRomCurve3(pts);
-      group.add(new THREE.Mesh(new THREE.TubeGeometry(curve, pts.length * 2, 0.0011, 4, false), mat));
+      group.add(new THREE.Mesh(new THREE.TubeGeometry(curve, pts.length * 2, 0.0008, 4, false), mat));
     }
     this.rivers = group;
     this.scene.add(group);

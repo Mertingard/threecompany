@@ -297,7 +297,16 @@ wss.on('connection', (ws) => {
     if (!room.started) {
       room.players.delete(player.pid);
       if (room.hostPid === player.pid) room.hostPid = room.players.keys().next().value || null;
-    } else room.broadcast({ t: 'info', msg: `${player.name} bağlantısı koptu. Ülkesi bekleme modunda.` });
+    } else {
+      room.broadcast({ t: 'info', msg: `${player.name} bağlantısı koptu. Ülkesi bekleme modunda.` });
+      if (room.hostPid === player.pid) {
+        const next = [...room.players.values()].find((x) => x.online);
+        if (next) {
+          room.hostPid = next.pid;
+          room.broadcast({ t: 'info', msg: `Oda kuruculuğu ${next.name} oyuncusuna geçti.` });
+        }
+      }
+    }
     room.broadcastLobby();
   });
 });

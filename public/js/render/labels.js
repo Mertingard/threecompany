@@ -161,7 +161,7 @@ export class Labels {
       const screen = it.h / Math.max(0.05, dist - 1);
       let op = Math.min(1, (screen - 0.02) / 0.04);
       if (screen > 0.5) op = Math.max(0, 1 - (screen - 0.5) / 0.4);
-      if (dist < 1.3) op *= Math.max(0, (dist - 1.12) / 0.18);
+      if (dist < 1.65) op *= Math.max(0, Math.min(1, (dist - 1.22) / 0.43));
       const facing = it.center.dot(camDir);
       if (facing < 0.1) op = 0;
       it.mesh.visible = op > 0.02;

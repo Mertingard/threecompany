@@ -290,6 +290,7 @@ export class GameUI {
     }
     if (force || (v.borderDirty && now - (v.borderT || 0) > 400)) {
       this.borders.rebuild(this.G);
+      this.app.structures.rebuild(this.G);
       v.borderDirty = false; v.borderT = now;
       v.labelDirty = true;
     }
@@ -305,6 +306,7 @@ export class GameUI {
     this.refreshMap();
     if (now - this.lastTop > 150) { this.updateTopbar(); this.lastTop = now; }
     if (now - this.lastSide > 300) { this.renderSide(); this.lastSide = now; }
+    if (now - (this.lastStruct || 0) > 2000) { this.app.structures.rebuild(this.G); this.lastStruct = now; }
     this.checkProposals();
     this.checkOver();
     // seçili ordular silindiyse
@@ -318,6 +320,7 @@ export class GameUI {
     this.armyLayer.selected = this.sel.armies;
     this.armyLayer.update(this.G, this.me, dist);
     if (this.labelsOn) this.labels.update(dist);
+    this.app.structures.setVisible(dist);
     // seçili ordunun yolu
     const a = this.sel.armies.size === 1 ? this.G.state.armies[[...this.sel.armies][0]] : null;
     const key = a ? a.id + ':' + a.cell + ':' + a.path.length : '';
@@ -367,6 +370,12 @@ export class GameUI {
   }
 
   clickCell(c, e) {
+    if (this.moveMode) {
+      this.moveMode = false;
+      document.body.style.cursor = '';
+      if (c >= 0) this.rightClickCell(c);
+      return;
+    }
     if (c < 0) { this.clearSel(); return; }
     const mine = Object.values(this.G.state.armies).filter((a) => a.cell === c && a.owner === this.me);
     if (e && e.shiftKey && mine.length) { for (const a of mine) this.sel.armies.add(a.id); this.renderSide(true); return; }
@@ -439,12 +448,18 @@ export class GameUI {
     if (this.sel.armies.size) {
       const a = s.armies[[...this.sel.armies][0]];
       if (a && a.owner === this.me && a.cell !== c) {
-        const p = findPath(G, this.me, a.cell, c, armySpeed(G, a), 4000);
-        if (p) {
-          let d = 0, prev = a.cell;
-          for (const x of p) { d += moveDays(G, this.me, prev, x, armySpeed(G, a)); prev = x; }
-          html += `<br><span class="gold">Sağ tık: hareket (~${Math.ceil(d - a.prog)} gün)</span>`;
-        } else html += '<br><span class="neg">Ulaşılamaz</span>';
+        const key = a.id + ':' + a.cell + ':' + c + ':' + s.warVer + ':' + s.pactVer;
+        if (!this.hoverPath || this.hoverPath.key !== key) {
+          const p = findPath(G, this.me, a.cell, c, armySpeed(G, a), 4000);
+          let txt = '<br><span class="neg">Ulaşılamaz</span>';
+          if (p) {
+            let d = 0, prev = a.cell;
+            for (const x of p) { d += moveDays(G, this.me, prev, x, armySpeed(G, a)); prev = x; }
+            txt = `<br><span class="gold">${this.moveMode ? 'Tık' : 'Sağ tık'}: hareket (~${Math.ceil(d - a.prog)} gün)</span>`;
+          }
+          this.hoverPath = { key, txt };
+        }
+        html += this.hoverPath.txt;
       }
     }
     showTip(html, e.clientX, e.clientY);
@@ -455,7 +470,7 @@ export class GameUI {
     const k = e.key.toLowerCase();
     if (k === ' ') { e.preventDefault(); this.host.togglePause(); }
     else if (k >= '1' && k <= '5') this.host.setSpeed(+k);
-    else if (k === 'escape') { if (!closeTopModal()) { if (this.sel.cell >= 0 || this.sel.armies.size || this.sel.nation) this.clearSel(); else M.menuModal(this); } }
+    else if (k === 'escape') { if (this.moveMode) { this.moveMode = false; document.body.style.cursor = ''; return; } if (!closeTopModal()) { if (this.sel.cell >= 0 || this.sel.armies.size || this.sel.nation) this.clearSel(); else M.menuModal(this); } }
     else if (k === '+' || k === '=') this.host.setSpeed(Math.min(5, this.G.state.speed + 1));
     else if (k === '-') this.host.setSpeed(Math.max(1, this.G.state.speed - 1));
     else if (k === 't') M.techModal(this);
@@ -672,6 +687,7 @@ export class GameUI {
         kids.push(h('div', { class: 'sep' }),
           h('div', { class: 'muted', style: { fontSize: '13px', marginBottom: '6px' } }, 'Haritada bir bölgeye SAĞ TIKLAYARAK orduyu hareket ettir. Düşman ordusunun üstüne göndererek saldır, düşman topraklarında bekleterek kuşat.'),
           h('div', { class: 'row wrap' },
+            h('button', { class: 'btn small primary', tip: 'Sonra haritada hedef bölgeye tıkla (dokunmatik ekranlar için)', onclick: () => { this.moveMode = true; document.body.style.cursor = 'crosshair'; toast('Hedef bölgeye tıklayın.'); } }, '➜ Hareket'),
             h('button', { class: 'btn small', onclick: () => this.cmd({ type: 'stop', armies: [a.id] }, true) }, '■ Dur'),
             h('button', { class: 'btn small', disabled: a.regs.length < 2, onclick: async () => { const r = await this.cmd({ type: 'split', army: a.id }, true); if (r.ok) this.sel.armies.add(r.id); } }, '✂ Böl'),
             same.length ? h('button', { class: 'btn small', onclick: () => this.cmd({ type: 'merge', armies: [a.id, ...same.map((x) => x.id)] }, true) }, `⊕ Buradakilerle birleştir (${same.length})`) : null,
@@ -688,6 +704,7 @@ export class GameUI {
       armies.map((a) => h('div', { class: 'bld', style: { cursor: 'pointer' }, onclick: () => { this.sel.armies = new Set([a.id]); this.renderSide(true); } },
         flag(s.nations[a.owner], 18, 12), h('span', { class: 'nm' }, a.name, h('br'), h('small', null, this.armyStatus(a))), h('span', null, fmtNum(armyMen(a))))),
       h('div', { class: 'row wrap', style: { marginTop: '8px' } },
+        mine.length ? h('button', { class: 'btn small primary', onclick: () => { this.moveMode = true; document.body.style.cursor = 'crosshair'; toast('Hedef bölgeye tıklayın.'); } }, '➜ Hareket') : null,
         sameCell ? h('button', { class: 'btn small', onclick: () => this.cmd({ type: 'merge', armies: mine.map((a) => a.id) }, true) }, '⊕ Birleştir') : null,
         h('button', { class: 'btn small', onclick: () => this.cmd({ type: 'stop', armies: mine.map((a) => a.id) }, true) }, '■ Hepsi dursun')),
       h('div', { class: 'muted', style: { fontSize: '13px', marginTop: '6px' } }, 'Shift + tık ile ordu ekle/çıkar. Sağ tık: hepsini hareket ettir.'))];

@@ -9,12 +9,13 @@ import { Globe } from './render/globe.js';
 import { Borders } from './render/borders.js';
 import { Labels } from './render/labels.js';
 import { ArmyLayer } from './render/armies.js';
+import { Structures } from './render/structures.js';
 import { LocalHost } from './net/local.js';
 import { RemoteHost } from './net/remote.js';
 import { GameUI } from './ui/game-ui.js';
 import { MainMenu, SingleSetup, LoadScreen, MultiplayerScreen, LobbyScreen } from './ui/screens.js';
 import { helpModal } from './ui/modals.js';
-import { h, toast, showTip, hideTip } from './ui/dom.js';
+import { h, toast, showTip, hideTip, openModal } from './ui/dom.js';
 
 const loadText = (t, pct) => {
   document.getElementById('load-text').textContent = t;
@@ -36,11 +37,12 @@ class App {
     this.borders = new Borders(this.globe);
     this.labels = new Labels(this.globe);
     this.armyLayer = new ArmyLayer(this.globe, document.getElementById('overlay'));
+    this.structures = new Structures(this.globe);
     loadText('1200 yılının devletleri kuruluyor…', 90);
     await new Promise((r) => setTimeout(r, 20));
     if (document.fonts && document.fonts.ready) await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1500))]);
     this.newPreview();
-    this.globe.on('frame', (dt, dist) => { if (!this.game) this.labels.update(dist); });
+    this.globe.on('frame', (dt, dist) => { if (!this.game) this.labels.update(dist); this.structures.setVisible(dist); });
     document.getElementById('loading').remove();
     this.toMainMenu();
     window.__app = this;
@@ -58,6 +60,7 @@ class App {
     this.globe.recolor(G, 0);
     this.borders.rebuild(G);
     this.labels.rebuild(G);
+    this.structures.rebuild(G);
     this.labels.group.visible = true;
   }
 
@@ -94,6 +97,23 @@ class App {
 
   showHelp() { helpModal(); }
 
+  showTips(force = false) {
+    try { if (!force && localStorage.getItem('oc-tips')) return; } catch {}
+    const tips = [
+      ['🖱️', 'Sol tıkla bölge veya ordu seç, sürükleyerek küreyi döndür, tekerlekle yakınlaş.'],
+      ['➜', 'Ordunu seçip bir bölgeye SAĞ TIKLA (ya da ordu panelindeki "Hareket" düğmesini kullan).'],
+      ['⏸', 'Oyun duraklatılmış başlar. Boşluk tuşu ile zamanı başlat, 1–5 tuşlarıyla hızı ayarla.'],
+      ['🏰', 'Düşman bölgesinde bekleyen ordu orayı kuşatır. Kaleler kuşatmayı uzatır.'],
+      ['⚑', 'Gri (sahipsiz) topraklara yerleşim kurarak ya da orduyla yerlileri fethederek büyü.'],
+      ['📜', 'Sağdaki sekmelerden teknoloji, diplomasi, savaşlar ve ekonomiyi yönet. H: yardım.'],
+    ];
+    const m = openModal({
+      key: 'tips', title: 'İlk Adımlar', width: '560px',
+      body: h('div', { class: 'col' }, tips.map(([i, t]) => h('div', { class: 'row', style: { alignItems: 'flex-start' } }, h('span', { style: { fontSize: '20px', width: '28px', textAlign: 'center' } }, i), h('span', { style: { lineHeight: 1.4 } }, t)))),
+      footer: [h('button', { class: 'btn', onclick: () => { try { localStorage.setItem('oc-tips', '1'); } catch {} m.close(); } }, 'Bir daha gösterme'), h('button', { class: 'btn primary', onclick: () => m.close() }, 'Başlayalım!')],
+    });
+  }
+
   showSingleSetup() {
     this.clearScreen();
     this.globe.controls.autoRotate = false;
@@ -117,6 +137,7 @@ class App {
     this.clearScreen();
     this.launch(new LocalHost(this.W, s, me));
     toast('Oyun duraklatılmış olarak başladı. Boşluk tuşu ile zamanı başlat.');
+    this.showTips();
   }
 
   launch(host) {
